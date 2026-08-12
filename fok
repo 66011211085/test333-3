@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Scopus Research Visualization</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, "Noto Sans Thai", sans-serif;
+    background: #f5f7fb;
+    color: #1f2937;
+}
+
+header {
+    background: linear-gradient(135deg, #111827, #374151);
+    color: white;
+    padding: 40px 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+}
+
+header h1 {
+    margin: 0 0 10px;
+    font-size: 32px;
+}
+
+header p {
+    margin: 0;
+    color: #d1d5db;
+}
+
+.dashboard {
+    padding: 25px 20px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.card {
+    background: white;
+    padding: 22px;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+}
+
+.card-title {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.card-number {
+    font-size: 30px;
+    font-weight: bold;
+    margin-top: 8px;
+}
+
+.filters {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: white;
+    font-size: 15px;
+}
+
+.charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.chart-card {
+    background: white;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+}
+
+.chart-card h2 {
+    font-size: 19px;
+    margin-top: 0;
+}
+
+.chart-container {
+    height: 320px;
+}
+
+.table-card {
+    background: white;
+    margin-top: 25px;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+}
+
+.table-container {
+    overflow-x: auto;
+    max-height: 500px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+th {
+    background: #f9fafb;
+    position: sticky;
+    top: 0;
+}
+
+.title {
+    min-width: 350px;
+}
+
+a {
+    color: #2563eb;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.badge {
+    background: #eef2ff;
+    color: #4338ca;
+    padding: 5px 9px;
+    border-radius: 20px;
+    font-size: 12px;
+}
+
+footer {
+    text-align: center;
+    color: #6b7280;
+    padding: 30px;
+}
+
+@media(max-width: 800px) {
+
+    .cards {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .charts {
+        grid-template-columns: 1fr;
+    }
+
+    .filters {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="container">
+        <h1>📊 Scopus Research Visualization</h1>
+        <p>Dashboard วิเคราะห์ข้อมูลบทความวิจัยจาก Scopus</p>
+    </div>
+</header>
+
+<div class="container dashboard">
+
+    <!-- SUMMARY -->
+    <div class="cards">
+
+        <div class="card">
+            <div class="card-title">จำนวนบทความ</div>
+            <div class="card-number" id="totalArticles">600</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">จำนวนการอ้างอิง</div>
+            <div class="card-number" id="totalCitations">0</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">ปีล่าสุด</div>
+            <div class="card-number" id="latestYear">2026</div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">จำนวนวารสาร</div>
+            <div class="card-number" id="journalCount">0</div>
+        </div>
+
+    </div>
+
+
+    <!-- SEARCH -->
+    <div class="filters">
+
+        <input
+            type="text"
+            id="search"
+            placeholder="🔎 ค้นหาบทความ..."
+        >
+
+        <select id="year">
+            <option value="">ทุกปี</option>
+        </select>
+
+        <select id="type">
+            <option value="">ทุกประเภทเอกสาร</option>
+        </select>
+
+    </div>
+
+
+    <!-- CHARTS -->
+    <div class="charts">
+
+        <div class="chart-card">
+            <h2>📅 จำนวนบทความตามปี</h2>
+
+            <div class="chart-container">
+                <canvas id="yearChart"></canvas>
+            </div>
+        </div>
+
+
+        <div class="chart-card">
+            <h2>📚 การอ้างอิงตามปี</h2>
+
+            <div class="chart-container">
+                <canvas id="citationChart"></canvas>
+            </div>
+        </div>
+
+
+        <div class="chart-card">
+            <h2>📄 ประเภทเอกสาร</h2>
+
+            <div class="chart-container">
+                <canvas id="typeChart"></canvas>
+            </div>
+        </div>
+
+
+        <div class="chart-card">
+            <h2>📰 วารสารที่มีบทความมากที่สุด</h2>
+
+            <div class="chart-container">
+                <canvas id="journalChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- TABLE -->
+    <div class="table-card">
+
+        <h2>📑 รายการบทความ</h2>
+
+        <p>
+            แสดง <span id="showing">0</span> รายการ
+        </p>
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>ชื่อบทความ</th>
+                        <th>ปี</th>
+                        <th>อ้างอิง</th>
+                        <th>วารสาร</th>
+                        <th>ประเภท</th>
+                    </tr>
+                </thead>
+
+                <tbody id="articleTable">
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<footer>
+    Scopus Research Visualization
+</footer>
+
+
+<script>
+
+/*
+==================================================
+ข้อมูลตัวอย่างสำหรับ Visualization
+==================================================
+*/
+
+const data = [
+
+    {
+        title: "Artificial Intelligence in Modern Education",
+        year: 2026,
+        cited: 25,
+        journal: "International Journal of Computer Science",
+        type: "Article"
+    },
+
+    {
+        title: "Machine Learning Applications",
+        year: 2026,
+        cited: 18,
+        journal: "Journal of Artificial Intelligence",
+        type: "Article"
+    },
+
+    {
+        title: "Data Visualization Techniques",
+        year: 2025,
+        cited: 32,
+        journal: "International Journal of Computer Science",
+        type: "Article"
+    },
+
+    {
+        title: "Big Data Analytics",
+        year: 2025,
+        cited: 20,
+        journal: "Data Science Journal",
+        type: "Article"
+    },
+
+    {
+        title: "Deep Learning for Image Classification",
+        year: 2024,
+        cited: 45,
+        journal: "Journal of Artificial Intelligence",
+        type: "Article"
+    },
+
+    {
+        title: "Internet of Things Applications",
+        year: 2024,
+        cited: 27,
+        journal: "Technology Journal",
+        type: "Conference Paper"
+    },
+
+    {
+        title: "Cloud Computing Security",
+        year: 2023,
+        cited: 40,
+        journal: "Computer Security Journal",
+        type: "Article"
+    },
+
+    {
+        title: "Blockchain Technology",
+        year: 2023,
+        cited: 35,
+        journal: "Technology Journal",
+        type: "Article"
+    },
+
+    {
+        title: "Natural Language Processing",
+        year: 2022,
+        cited: 55,
+        journal: "Journal of Artificial Intelligence",
+        type: "Article"
+    },
+
+    {
+        title: "Smart City Development",
+        year: 2022,
+        cited: 29,
+        journal: "Smart Technology Journal",
+        type: "Conference Paper"
+    }
+
+];
+
+
+/*
+==================================================
+สร้าง Filter
+==================================================
+*/
+
+const years = [...new Set(data.map(item => item.year))];
+
+years.sort((a,b) => b-a);
+
+years.forEach(year => {
+
+    const option = document.createElement("option");
+
+    option.value = year;
+    option.textContent = year;
+
+    document.getElementById("year").appendChild(option);
+
+});
+
+
+const types = [...new Set(data.map(item => item.type))];
+
+types.forEach(type => {
+
+    const option = document.createElement("option");
+
+    option.value = type;
+    option.textContent = type;
+
+    document.getElementById("type").appendChild(option);
+
+});
+
+
+/*
+==================================================
+Update Dashboard
+==================================================
+*/
+
+function updateDashboard() {
+
+    const search =
+        document
+        .getElementById("search")
+        .value
+        .toLowerCase();
+
+    const selectedYear =
+        document.getElementById("year").value;
+
+    const selectedType =
+        document.getElementById("type").value;
+
+
+    const filtered = data.filter(item => {
+
+        const text =
+            item.title.toLowerCase();
+
+        const matchSearch =
+            text.includes(search);
+
+        const matchYear =
+            selectedYear === "" ||
+            item.year == selectedYear;
+
+        const matchType =
+            selectedType === "" ||
+            item.type === selectedType;
+
+        return matchSearch &&
+               matchYear &&
+               matchType;
+
+    });
+
+
+    /*
+    Summary
+    */
+
+    document.getElementById("totalArticles")
+        .textContent = filtered.length;
+
+
+    const totalCitations =
+        filtered.reduce(
+            (sum,item) => sum + item.cited,
+            0
+        );
+
+    document.getElementById("totalCitations")
+        .textContent = totalCitations;
+
+
+    const journalCount =
+        new Set(
+            filtered.map(item => item.journal)
+        ).size;
+
+    document.getElementById("journalCount")
+        .textContent = journalCount;
+
+
+    if(filtered.length > 0) {
+
+        document.getElementById("latestYear")
+            .textContent =
+            Math.max(
+                ...filtered.map(item => item.year)
+            );
+
+    }
+
+
+    /*
+    Table
+    */
+
+    const table =
+        document.getElementById("articleTable");
+
+    table.innerHTML = "";
+
+
+    filtered.forEach((item,index) => {
+
+        const row =
+            document.createElement("tr");
+
+        row.innerHTML = `
+
+            <td>${index + 1}</td>
+
+            <td class="title">
+                ${item.title}
+            </td>
+
+            <td>
+                ${item.year}
+            </td>
+
+            <td>
+                ${item.cited}
+            </td>
+
+            <td>
+                ${item.journal}
+            </td>
+
+            <td>
+                <span class="badge">
+                    ${item.type}
+                </span>
+            </td>
+
+        `;
+
+        table.appendChild(row);
+
+    });
+
+
+    document.getElementById("showing")
+        .textContent = filtered.length;
+
+
+    /*
+    Charts
+    */
+
+    createCharts(filtered);
+
+}
+
+
+/*
+==================================================
+Charts
+==================================================
+*/
+
+let yearChart;
+let citationChart;
+let typeChart;
+let journalChart;
+
+
+function createCharts(filtered) {
+
+
+    /*
+    Articles by Year
+    */
+
+    const yearData = {};
+
+    filtered.forEach(item => {
+
+        if(!yearData[item.year]) {
+            yearData[item.year] = 0;
+        }
+
+        yearData[item.year]++;
+
+    });
+
+
+    const yearLabels =
+        Object.keys(yearData).sort();
+
+
+    const yearValues =
+        yearLabels.map(
+            year => yearData[year]
+        );
+
+
+    if(yearChart) yearChart.destroy();
+
+
+    yearChart =
+        new Chart(
+            document.getElementById("yearChart"),
+            {
+
+                type: "bar",
+
+                data: {
+
+                    labels: yearLabels,
+
+                    datasets: [{
+
+                        label: "จำนวนบทความ",
+
+                        data: yearValues
+
+                    }]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false
+
+                }
+
+            }
+        );
+
+
+    /*
+    Citations by Year
+    */
+
+    const citationData = {};
+
+    filtered.forEach(item => {
+
+        if(!citationData[item.year]) {
+            citationData[item.year] = 0;
+        }
+
+        citationData[item.year] += item.cited;
+
+    });
+
+
+    const citationLabels =
+        Object.keys(citationData).sort();
+
+
+    const citationValues =
+        citationLabels.map(
+            year => citationData[year]
+        );
+
+
+    if(citationChart)
+        citationChart.destroy();
+
+
+    citationChart =
+        new Chart(
+            document.getElementById("citationChart"),
+            {
+
+                type: "line",
+
+                data: {
+
+                    labels: citationLabels,
+
+                    datasets: [{
+
+                        label: "จำนวนการอ้างอิง",
+
+                        data: citationValues,
+
+                        tension: 0.3
+
+                    }]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false
+
+                }
+
+            }
+        );
+
+
+    /*
+    Document Type
+    */
+
+    const typeData = {};
+
+    filtered.forEach(item => {
+
+        if(!typeData[item.type]) {
+            typeData[item.type] = 0;
+        }
+
+        typeData[item.type]++;
+
+    });
+
+
+    if(typeChart)
+        typeChart.destroy();
+
+
+    typeChart =
+        new Chart(
+            document.getElementById("typeChart"),
+            {
+
+                type: "doughnut",
+
+                data: {
+
+                    labels:
+                        Object.keys(typeData),
+
+                    datasets: [{
+
+                        data:
+                            Object.values(typeData)
+
+                    }]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false
+
+                }
+
+            }
+        );
+
+
+    /*
+    Journals
+    */
+
+    const journalData = {};
+
+    filtered.forEach(item => {
+
+        if(!journalData[item.journal]) {
+            journalData[item.journal] = 0;
+        }
+
+        journalData[item.journal]++;
+
+    });
+
+
+    const journals =
+        Object.entries(journalData)
+        .sort((a,b) => b[1]-a[1])
+        .slice(0,10);
+
+
+    if(journalChart)
+        journalChart.destroy();
+
+
+    journalChart =
+        new Chart(
+            document.getElementById("journalChart"),
+            {
+
+                type: "bar",
+
+                data: {
+
+                    labels:
+                        journals.map(item => item[0]),
+
+                    datasets: [{
+
+                        label: "จำนวนบทความ",
+
+                        data:
+                            journals.map(item => item[1])
+
+                    }]
+
+                },
+
+                options: {
+
+                    indexAxis: "y",
+
+                    responsive: true,
+
+                    maintainAspectRatio: false
+
+                }
+
+            }
+        );
+
+}
+
+
+/*
+==================================================
+ค้นหา / Filter
+==================================================
+*/
+
+document
+    .getElementById("search")
+    .addEventListener(
+        "input",
+        updateDashboard
+    );
+
+
+document
+    .getElementById("year")
+    .addEventListener(
+        "change",
+        updateDashboard
+    );
+
+
+document
+    .getElementById("type")
+    .addEventListener(
+        "change",
+        updateDashboard
+    );
+
+
+/*
+==================================================
+เริ่มต้นเว็บไซต์
+==================================================
+*/
+
+updateDashboard();
+
+</script>
+
+</body>
+</html>
